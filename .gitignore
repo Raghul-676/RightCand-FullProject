@@ -17,8 +17,8 @@ pyvenv.cfg
 **/pyvenv.cfg
 interviewer_env/
 **/interviewer_env/
-interview-prep-assistant/
-**/interview-prep-assistant/
+# Virtual environment in capstone project
+final-capstone-project-agentic-ai-interview-preparation-assistant/interview-prep-assistant/
 Lib/
 **/Lib/
 Scripts/
