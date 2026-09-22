@@ -287,7 +287,7 @@ class MLDomainClassifier:
         """
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
@@ -323,7 +323,7 @@ class MLDomainClassifier:
         prompt = f"Generate a short professional project name (2-4 words, no quotes, no explanation, just the name) for:\n{summary}"
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}]
         )
 

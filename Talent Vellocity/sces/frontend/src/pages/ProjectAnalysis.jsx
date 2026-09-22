@@ -198,7 +198,7 @@ export default function ProjectAnalysis() {
                     >
                       <div style={{ flex: 1, paddingRight: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <h4 style={{ fontWeight: 700, fontSize: '1.05rem' }}>{repo.project_name}</h4>
+                          <h4 style={{ fontWeight: 700, fontSize: '1.05rem', color: '#000000' }}>{repo.project_name}</h4>
                           <span className="badge badge-blue" style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem' }}>
                             {primaryLang}
                           </span>

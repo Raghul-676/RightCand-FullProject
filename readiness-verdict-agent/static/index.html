@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Readiness Verdict Agent</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --grid-bg: #060913;
+            --panel: rgba(17, 25, 40, 0.65);
+            --panel-hover: rgba(25, 37, 60, 0.85);
+            --border: rgba(255, 255, 255, 0.07);
+            --border-highlight: rgba(255, 255, 255, 0.15);
+            --primary: #6366f1;
+            --primary-rgb: 99, 102, 241;
+            --primary-glow: rgba(99, 102, 241, 0.3);
+            --accent-cyan: #06b6d4;
+            --accent-purple: #d946ef;
+            --accent-orange: #f97316;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(217, 70, 239, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 2.5rem 2rem 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-title-container h1 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 2.2rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fff 30%, #a5b4fc 70%, #d946ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-title-container p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.25rem;
+        }
+
+        .status-badge {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            main {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        /* Glassmorphism Panel style */
+        .glass-panel {
+            background: var(--panel);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel:hover {
+            border-color: var(--border-highlight);
+        }
+
+        h2.panel-title {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #fff;
+        }
+
+        /* LEFT SIDEBAR: Source File Control */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(99, 102, 241, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary);
+            display: block;
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0.5rem 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .divider:not(:empty)::before { margin-right: 1rem; }
+        .divider:not(:empty)::after { margin-left: 1rem; }
+
+        .samples-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .sample-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sample-card:hover {
+            background: var(--panel-hover);
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .sample-card.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .sample-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sample-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        .sample-tag {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        .sample-icon {
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .sample-card:hover .sample-icon, .sample-card.active .sample-icon {
+            color: var(--primary);
+        }
+
+        /* RIGHT CONTENT: Dashboard Workspace */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .preview-panel {
+            background: rgba(10, 15, 26, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            max-height: 250px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .preview-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-cyan);
+        }
+
+        .preview-content {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+        }
+
+        .action-container {
+            display: flex;
+            justify-content: center;
+            padding: 0.5rem 0;
+        }
+
+        .btn-glowing {
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            border: none;
+            color: #white;
+            color: white;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .btn-glowing:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-glowing:active {
+            transform: translateY(1px);
+        }
+
+        .btn-glowing:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* LOADING BLOCKER */
+        .loading-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            gap: 1.5rem;
+        }
+
+        .loader-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle, transparent 55%, var(--bg) 55%),
+                        conic-gradient(var(--primary) 0deg, var(--accent-purple) 180deg, transparent 270deg);
+            animation: spin 1.5s linear infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .loader-ring::before {
+            content: '';
+            position: absolute;
+            width: 68px;
+            height: 68px;
+            background-color: var(--bg);
+            border-radius: 50%;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .step-item {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .step-item.active {
+            color: #fff;
+            font-weight: 600;
+            transform: scale(1.05);
+        }
+
+        .step-item.completed {
+            color: var(--success);
+        }
+
+        /* DASHBOARD METRICS DISPLAY */
+        .dashboard-grid {
+            display: none; /* Shown dynamically after load */
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .dashboard-left, .dashboard-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* METRIC CARDS */
+        .metric-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem;
+            background: rgba(255, 255, 255, 0.015);
+        }
+
+        .metric-card-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header-icon {
+            color: var(--primary);
+        }
+
+        /* Coding Stats Layout */
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+            color: #fff;
+        }
+
+        .stat-value.highlight-cyan { color: var(--accent-cyan); }
+        .stat-value.highlight-purple { color: var(--accent-purple); }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        .stats-secondary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .stat-mini-box {
+            background: rgba(255, 255, 255, 0.005);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 0.5rem;
+            text-align: center;
+        }
+
+        .stat-mini-value {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .stat-mini-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* Project Domain Scores */
+        .domain-row {
+            margin-bottom: 0.75rem;
+        }
+
+        .domain-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .domain-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .domain-name {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .domain-score {
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        .domain-projects-tag {
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+            font-weight: normal;
+        }
+
+        .domain-bar-bg {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .domain-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent-cyan) 100%);
+            border-radius: 4px;
+            transition: width 1s ease-out;
+        }
+
+        /* Mock Interviews List */
+        .interview-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .interview-item {
+            background: rgba(255, 255, 255, 0.01);
+            border-left: 3px solid var(--primary);
+            padding: 0.75rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .interview-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+        }
+
+        .interview-type {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .interview-score {
+            font-size: 0.85rem;
+            font-weight: 800;
+            padding: 0.1rem 0.5rem;
+            border-radius: 9999px;
+            font-family: var(--font-display);
+        }
+
+        .score-good { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .score-medium { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .score-poor { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        .interview-topic {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .interview-feedback {
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* AGENT VERDICT DASHBOARD CARD */
+        .verdict-header-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(217, 70, 239, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 18px;
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .verdict-header-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(217, 70, 239, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .verdict-meta-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .activity-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .activity-badge.concern {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .activity-badge.ok {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .verdict-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .bottleneck-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .bottleneck-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .bottleneck-value {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.3;
+        }
+
+        .action-section {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .action-label {
+            font-size: 0.7rem;
+            color: var(--accent-purple);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+        }
+
+        .action-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .reasoning-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 1rem;
+        }
+
+        .reasoning-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .reasoning-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text-muted);
+        }
+
+        .citations-section {
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .citations-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .citation-chip {
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            color: var(--accent-cyan);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* LOGS PANEL / AGENT PROGRESS STEPS */
+        .agent-steps-card {
+            background: rgba(10, 15, 26, 0.45);
+            border: 1px solid var(--border);
+        }
+
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .step-block {
+            border-left: 2px solid rgba(255, 255, 255, 0.06);
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        .step-block::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+        }
+
+        .step-block.type-assistant::before { background-color: var(--primary); }
+        .step-block.type-tool::before { background-color: var(--accent-cyan); }
+        .step-block.type-citation-error::before { background-color: var(--danger); animation: glow-red 1.5s infinite alternate; }
+
+        @keyframes glow-red {
+            0% { box-shadow: 0 0 2px var(--danger); }
+            100% { box-shadow: 0 0 8px var(--danger); }
+        }
+
+        .step-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-role {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .step-role.assistant { color: var(--primary); }
+        .step-role.tool { color: var(--accent-cyan); }
+        .step-role.citation-error { color: var(--danger); }
+
+        .step-time {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .step-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .step-payload {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.7rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            padding: 0.5rem;
+            overflow-x: auto;
+            color: var(--accent-cyan);
+            max-width: 100%;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .self-corrections-badge {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* SVG Styles */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            stroke-width: 0;
+            stroke: currentColor;
+            fill: currentColor;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title-container">
+            <h1>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Readiness Verdict Agent
+            </h1>
+            <p>Standalone Agentic Profile Evaluator & Diagnostic Assistant</p>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            Agent Operational
+        </div>
+    </header>
+
+    <main>
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <!-- Source selection -->
+            <div class="glass-panel">
+                <h2 class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="card-header-icon">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Student Report Ingestion
+                </h2>
+
+                <div class="upload-zone" id="upload-zone">
+                    <span class="upload-icon">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </span>
+                    <span class="upload-text">Upload Custom Report</span>
+                    <span class="upload-subtext">Drag & drop or click (.md, .txt)</span>
+                    <input type="file" id="file-input" accept=".md,.txt">
+                </div>
+
+                <div class="divider">Or load a sample</div>
+
+                <div class="samples-grid" id="samples-container">
+                    <!-- Loaded dynamically -->
+                    <div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:1rem;">
+                        Loading sample profiles...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORKSPACE -->
+        <div class="workspace">
+            <!-- Text Preview Panel -->
+            <div class="glass-panel">
+                <div class="preview-header">
+                    <span class="preview-title" id="preview-filename">No document selected</span>
+                    <span style="font-size:0.7rem; color:var(--text-muted);">SOURCE PREVIEW</span>
+                </div>
+                <div class="preview-panel">
+                    <div class="preview-content" id="preview-body">Please select one of the pre-loaded student reports on the left sidebar or upload your own report to preview its raw markdown layout before assessment.</div>
+                </div>
+                <div class="action-container" style="margin-top: 1.25rem;">
+                    <button class="btn-glowing" id="btn-analyze" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Evaluate Readiness Verdict
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loader Screen -->
+            <div class="glass-panel loading-container" id="loading-panel">
+                <div class="loader-ring"></div>
+                <h3 style="font-family:var(--font-display); font-weight:700; margin-top:0.5rem;">Agent Processing</h3>
+                <div class="loading-steps">
+                    <div class="step-item active" id="step-extract">Extracting structured student parameters...</div>
+                    <div class="step-item" id="step-agent">Activating agent verdict tool-calling loop...</div>
+                    <div class="step-item" id="step-correct">Running self-correction and citation check...</div>
+                    <div class="step-item" id="step-render">Analysis final output rendering...</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid" id="dashboard-panel">
+                <div class="dashboard-left">
+                    <!-- Coding Stats -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-card-title">
+                            Coding Statistics
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="card-header-icon">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stats-summary">
+                            <div class="stat-box">
+                                <div class="stat-value highlight-cyan" id="stat-lc-solved">0</div>
+                                <div class="stat-label">LeetCode Solved</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value highlight-purple" id="stat-lc-rating">0</div>
+                                <div class="stat-label">LeetCode Rating</div>
+                            </div>
+                        </div>
+                        <div class="stats-secondary-grid">
+                            <div class="stat-mini-box">
+                                <div class="stat-mini-value" id="stat-lc-hard">0</div>
+                                <div class="stat-mini-label">LC Hard</div>
+                            </div>
+                            <div class="stat-mini-box">
+                                <div class="stat-mini-value" id="stat-cf-rating">0</div>
+                                <div class="stat-mini-label">CF Rating</div>
+                            </div>
+                            <div class="stat-mini-box">
+                                <div class="stat-mini-value" id="stat-contests">0</div>
+                                <div class="stat-mini-label">Contests</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Domain Scores -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-card-title">
+                            Project Domain Metrics
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="card-header-icon">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                        </div>
+                        <div id="domain-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <!-- Populated dynamically -->
+                            <div style="font-size:0.8rem; color:var(--text-muted);">No projects identified.</div>
+                        </div>
+                    </div>
+
+                    <!-- Interview History -->
+                    <div class="glass-panel metric-card">
+                        <div class="metric-card-title">
+                            Mock Interview Performance
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="card-header-icon">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="interview-list" id="interview-container">
+                            <!-- Populated dynamically -->
+                            <div style="font-size:0.8rem; color:var(--text-muted);">No mock interviews available.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-right">
+                    <!-- Final Verdict -->
+                    <div class="glass-panel verdict-header-card">
+                        <div class="verdict-meta-top">
+                            <span class="verdict-tag">Placement Verdict</span>
+                            <span id="verdict-activity-badge" class="activity-badge ok">No concern</span>
+                        </div>
+
+                        <div class="bottleneck-section">
+                            <div class="bottleneck-label">Identified Bottleneck</div>
+                            <div class="bottleneck-value" id="verdict-bottleneck">-</div>
+                        </div>
+
+                        <div class="action-section">
+                            <div class="action-label">Highest Leverage Next Action</div>
+                            <div class="action-value" id="verdict-next-action">-</div>
+                        </div>
+
+                        <div class="reasoning-section">
+                            <div class="reasoning-label">Agent Reasoning Summary</div>
+                            <div class="reasoning-text" id="verdict-reasoning">-</div>
+                        </div>
+
+                        <div class="citations-section" id="verdict-citations-container">
+                            <span class="citations-label">Cited Sources:</span>
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Agent Steps / Logs -->
+                    <div class="glass-panel metric-card agent-steps-card">
+                        <div class="metric-card-title">
+                            Agent Execution Steps
+                            <span id="corrections-badge-container"></span>
+                        </div>
+                        <div class="steps-container" id="agent-steps-container">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Global State
+        let selectedText = "";
+        let selectedFilename = "";
+        let samplesList = [];
+
+        // Elements
+        const samplesContainer = document.getElementById("samples-container");
+        const previewFilename = document.getElementById("preview-filename");
+        const previewBody = document.getElementById("preview-body");
+        const btnAnalyze = document.getElementById("btn-analyze");
+        const fileInput = document.getElementById("file-input");
+        const uploadZone = document.getElementById("upload-zone");
+        const loadingPanel = document.getElementById("loading-panel");
+        const dashboardPanel = document.getElementById("dashboard-panel");
+
+        // Load Sample Documents on Startup
+        async function fetchSamples() {
+            try {
+                const res = await fetch("/api/samples");
+                const data = await res.json();
+                samplesList = data;
+                renderSamples(data);
+            } catch (err) {
+                console.error("Failed to fetch sample profiles", err);
+                samplesContainer.innerHTML = `<div style="color:var(--danger); font-size:0.85rem; text-align:center; padding:1rem;">Failed to load sample documents.</div>`;
+            }
+        }
+
+        function renderSamples(samples) {
+            if (samples.length === 0) {
+                samplesContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:1rem;">No reports found.</div>`;
+                return;
+            }
+
+            samplesContainer.innerHTML = "";
+            samples.forEach((sample, index) => {
+                const card = document.createElement("button");
+                card.className = "sample-card";
+                card.innerHTML = `
+                    <div class="sample-info">
+                        <span class="sample-name">${sample.display_name}</span>
+                        <span class="sample-tag">${sample.filename}</span>
+                    </div>
+                    <span class="sample-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </span>
+                `;
+                card.onclick = () => selectSample(sample, card);
+                samplesContainer.appendChild(card);
+            });
+        }
+
+        function selectSample(sample, element) {
+            // Deselect all active cards
+            document.querySelectorAll(".sample-card").forEach(el => el.classList.remove("active"));
+            
+            // Set active
+            if (element) element.classList.add("active");
+
+            selectedText = sample.content;
+            selectedFilename = sample.filename;
+
+            // Update preview
+            previewFilename.textContent = sample.display_name;
+            previewBody.textContent = sample.content;
+
+            // Enable analysis
+            btnAnalyze.disabled = false;
+            
+            // Scroll to preview on mobile
+            if (window.innerWidth < 1024) {
+                previewFilename.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // File upload handling
+        fileInput.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                // Deselect samples
+                document.querySelectorAll(".sample-card").forEach(el => el.classList.remove("active"));
+
+                selectedText = evt.target.result;
+                selectedFilename = file.name;
+
+                previewFilename.textContent = file.name;
+                previewBody.textContent = selectedText;
+                btnAnalyze.disabled = false;
+            };
+            reader.readAsText(file);
+        };
+
+        // Loading states manager
+        function updateLoadingStep(stepId, status) {
+            const el = document.getElementById(stepId);
+            if (!el) return;
+            el.className = "step-item " + status;
+        }
+
+        // Run Agent Evaluation
+        btnAnalyze.onclick = async function() {
+            if (!selectedText) return;
+
+            // Reset UI
+            dashboardPanel.style.display = "none";
+            loadingPanel.style.display = "flex";
+            
+            // Reset loader steps
+            updateLoadingStep("step-extract", "active");
+            updateLoadingStep("step-agent", "");
+            updateLoadingStep("step-correct", "");
+            updateLoadingStep("step-render", "");
+
+            try {
+                // Step 1: Request analysis from FastAPI
+                setTimeout(() => updateLoadingStep("step-agent", "active"), 1200);
+                setTimeout(() => updateLoadingStep("step-correct", "active"), 2400);
+                setTimeout(() => updateLoadingStep("step-render", "active"), 3600);
+
+                const res = await fetch("/api/analyze-text", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: selectedText })
+                });
+
+                if (!res.ok) {
+                    throw new Error("HTTP " + res.status);
+                }
+
+                const result = await res.json();
+                
+                // Complete all steps
+                updateLoadingStep("step-extract", "completed");
+                updateLoadingStep("step-agent", "completed");
+                updateLoadingStep("step-correct", "completed");
+                updateLoadingStep("step-render", "completed");
+
+                setTimeout(() => {
+                    loadingPanel.style.display = "none";
+                    renderDashboard(result.extracted_data, result.verdict);
+                }, 400);
+
+            } catch (err) {
+                console.error("Analysis execution error", err);
+                loadingPanel.style.display = "none";
+                alert("Failed to analyze the document. Check if the GROQ_API_KEY environment variable is configured correctly.");
+            }
+        };
+
+        function renderDashboard(extracted, verdict) {
+            dashboardPanel.style.display = "grid";
+
+            // Render stats
+            const stats = extracted.coding_stats || {};
+            document.getElementById("stat-lc-solved").textContent = stats.leetcode_solved || 0;
+            document.getElementById("stat-lc-rating").textContent = stats.leetcode_rating || 0;
+            document.getElementById("stat-lc-hard").textContent = stats.leetcode_hard_solved || 0;
+            document.getElementById("stat-cf-rating").textContent = stats.codeforces_rating || 0;
+            
+            const totalContests = (stats.leetcode_contests || 0) + (stats.codeforces_contests || 0);
+            document.getElementById("stat-contests").textContent = totalContests;
+
+            // Render domains
+            const domains = extracted.domain_scores || [];
+            const domainContainer = document.getElementById("domain-container");
+            if (domains.length === 0) {
+                domainContainer.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted);">No project domains parsed.</div>`;
+            } else {
+                domainContainer.innerHTML = "";
+                domains.forEach(d => {
+                    const row = document.createElement("div");
+                    row.className = "domain-row";
+                    row.innerHTML = `
+                        <div class="domain-meta">
+                            <span class="domain-name">
+                                ${d.domain}
+                                <span class="domain-projects-tag">${d.project_count || 0} proj</span>
+                            </span>
+                            <span class="domain-score">${d.domain_score || 0}%</span>
+                        </div>
+                        <div class="domain-bar-bg">
+                            <div class="domain-bar-fill" style="width: ${d.domain_score || 0}%"></div>
+                        </div>
+                    `;
+                    domainContainer.appendChild(row);
+                });
+            }
+
+            // Render interviews
+            const interviews = extracted.interview_history || [];
+            const intContainer = document.getElementById("interview-container");
+            if (interviews.length === 0) {
+                intContainer.innerHTML = `<div style="font-size:0.8rem; color:var(--text-muted);">No interviews logged.</div>`;
+            } else {
+                intContainer.innerHTML = "";
+                interviews.forEach(int => {
+                    const score = int.overall_score || 0;
+                    let scoreClass = "score-poor";
+                    if (score >= 7.0) scoreClass = "score-good";
+                    else if (score >= 5.0) scoreClass = "score-medium";
+
+                    const item = document.createElement("div");
+                    item.className = "interview-item";
+                    item.innerHTML = `
+                        <div class="interview-meta">
+                            <span class="interview-type">${int.question_type || 'Interview'}</span>
+                            <span class="interview-score ${scoreClass}">${score.toFixed(1)}</span>
+                        </div>
+                        <div class="interview-topic">${int.topic || 'General Topic'}</div>
+                        <div class="interview-feedback">"${int.feedback || 'No specific feedback.'}"</div>
+                    `;
+                    intContainer.appendChild(item);
+                });
+            }
+
+            // Render Verdict Header Card
+            document.getElementById("verdict-bottleneck").textContent = verdict.bottleneck || "No bottleneck detected.";
+            document.getElementById("verdict-next-action").textContent = verdict.next_action || "Continue ongoing prep.";
+            document.getElementById("verdict-reasoning").textContent = verdict.reasoning || "";
+
+            // Activity concern flag
+            const actCheck = verdict.activity_check || "";
+            const actBadge = document.getElementById("verdict-activity-badge");
+            actBadge.textContent = actCheck;
+            if (actCheck.includes("Concern:")) {
+                actBadge.className = "activity-badge concern";
+            } else {
+                actBadge.className = "activity-badge ok";
+            }
+
+            // Citations
+            const citContainer = document.getElementById("verdict-citations-container");
+            citContainer.innerHTML = `<span class="citations-label">Cited Sources:</span>`;
+            const cited = verdict.cited_data || [];
+            if (cited.length === 0) {
+                citContainer.innerHTML += `<span style="font-size:0.7rem; color:var(--text-muted);">None</span>`;
+            } else {
+                cited.forEach(c => {
+                    const chip = document.createElement("span");
+                    chip.className = "citation-chip";
+                    chip.textContent = c.replace("_", " ");
+                    citContainer.appendChild(chip);
+                });
+            }
+
+            // Render self-corrections badge
+            const correctionsBadge = document.getElementById("corrections-badge-container");
+            const sc = verdict.self_corrections || 0;
+            if (sc > 0) {
+                correctionsBadge.innerHTML = `
+                    <span class="self-corrections-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        ${sc} Self-Correction${sc > 1 ? 's' : ''} Needed
+                    </span>
+                `;
+            } else {
+                correctionsBadge.innerHTML = "";
+            }
+
+            // Render execution logs
+            const logsContainer = document.getElementById("agent-steps-container");
+            logsContainer.innerHTML = "";
+            
+            const steps = verdict.execution_steps || [];
+            steps.forEach(step => {
+                const block = document.createElement("div");
+                block.className = `step-block type-${step.type}`;
+                
+                let title = step.type.toUpperCase();
+                let payload = "";
+
+                if (step.type === "assistant") {
+                    title = "Assistant thought";
+                    if (step.tool_calls && step.tool_calls.length > 0) {
+                        const tc = step.tool_calls[0];
+                        payload = `Invoke tool: ${tc.name}\nArguments: ${tc.arguments}`;
+                    } else if (step.content) {
+                        payload = step.content;
+                    }
+                } else if (step.type === "tool") {
+                    title = `Tool result: ${step.name}`;
+                    try {
+                        const parsed = JSON.parse(step.content);
+                        payload = JSON.stringify(parsed, null, 2);
+                    } catch (e) {
+                        payload = step.content;
+                    }
+                } else if (step.type === "citation_error") {
+                    title = "Citation Validation Catch";
+                    payload = step.content;
+                }
+
+                block.innerHTML = `
+                    <div class="step-meta">
+                        <span class="step-role ${step.type}">${title}</span>
+                    </div>
+                    <div class="step-desc">
+                        <pre class="step-payload">${payload}</pre>
+                    </div>
+                `;
+                logsContainer.appendChild(block);
+            });
+
+            // Scroll dashboard into view
+            dashboardPanel.scrollIntoView({ behavior: "smooth" });
+        }
+
+        // Initialize drag-drop
+        uploadZone.ondragover = function(e) {
+            e.preventDefault();
+            this.style.borderColor = "var(--primary)";
+        };
+        uploadZone.ondragleave = function() {
+            this.style.borderColor = "rgba(99, 102, 241, 0.3)";
+        };
+        uploadZone.ondrop = function(e) {
+            e.preventDefault();
+            this.style.borderColor = "rgba(99, 102, 241, 0.3)";
+            
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                // Deselect samples
+                document.querySelectorAll(".sample-card").forEach(el => el.classList.remove("active"));
+
+                selectedText = evt.target.result;
+                selectedFilename = file.name;
+
+                previewFilename.textContent = file.name;
+                previewBody.textContent = selectedText;
+                btnAnalyze.disabled = false;
+            };
+            reader.readAsText(file);
+        };
+
+        // Run startup routine
+        fetchSamples();
+    </script>
+</body>
+</html>

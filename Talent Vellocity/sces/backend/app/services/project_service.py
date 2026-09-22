@@ -29,6 +29,8 @@ from llm_agent import synthesize
 from validator import validate_report
 
 
+
+
 def analyse_repo(repo_url: str) -> dict:
     # Step 1: Parse repo URL into owner/repo
     owner, repo = parse_repo_url(repo_url)
@@ -47,7 +49,8 @@ def analyse_repo(repo_url: str) -> dict:
     evidence = select_evidence_files(owner, repo, branch, tree, tech_stack.manifests_found)
 
     # Step 5: Synthesize grounded domain & summary claims via LLM agent
-    domain_claim, summary_claim = synthesize(tech_stack, complexity, evidence)
+    domain_claim, summary_claim, frameworks = synthesize(tech_stack, complexity, evidence)
+    tech_stack.frameworks_detected = frameworks
 
     # Validate report claims against retrieved evidence bundle
     validate_report(domain_claim, summary_claim, evidence)

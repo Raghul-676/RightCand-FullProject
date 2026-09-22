@@ -1,0 +1,95 @@
+import json
+
+sample_data = {
+    "candidate_id": "CAND_0000006",
+    "profile": {
+        "anonymized_name": "Rajesh Desai",
+        "headline": "Business Analyst | 6.0+ yrs experience",
+        "summary": "Professional with 6.0+ years of experience. I've spent my career in marketing manager roles, mostly focused on driving outcomes through process, people, and customer relationships. Lately I've been curious about how AI tools could augment my work \u2014 I've experimented with ChatGPT and a few other tools for productivity and content creation, and I think the space is exciting. Open to roles where I can apply my domain expertise alongside emerging AI capabilities.",
+        "location": "Austin",
+        "country": "USA",
+        "years_of_experience": 6.0,
+        "current_title": "Business Analyst",
+        "current_company": "Wayne Enterprises",
+        "current_company_size": "10001+",
+        "current_industry": "Conglomerate"
+    },
+    "career_history": [
+        {
+            "company": "Wayne Enterprises",
+            "title": "Business Analyst",
+            "start_date": "2023-09-10",
+            "end_date": None,
+            "duration_months": 33,
+            "is_current": True,
+            "industry": "Conglomerate",
+            "company_size": "10001+",
+            "description": "Senior accounting role at a mid-sized company \u2014 month-end close, financial reporting, statutory compliance (GAAP / Ind-AS), and tax filings. Owned the GL, fixed-asset register, and the audit-readiness function. Managed a team of 3 staff accountants. Built strong process discipline around the close cycle, reducing close time from 12 days to 7 over the last two years."
+        },
+        {
+            "company": "Pied Piper",
+            "title": "Mechanical Engineer",
+            "start_date": "2020-07-27",
+            "end_date": "2023-09-10",
+            "duration_months": 38,
+            "is_current": False,
+            "industry": "Software",
+            "company_size": "11-50",
+            "description": "Business analyst at a consulting firm, working primarily with retail and CPG clients. Conducted business diagnostics, process re-engineering work, and digital transformation strategy projects. Strong on stakeholder management, structured problem-solving, and the typical consulting toolkit (slide-craft, Excel modeling, executive communication). Recent project work involved AI-strategy advisory but my own technical depth in AI is limited."
+        }
+    ],
+    "education": [
+        {
+            "institution": "Lovely Professional University",
+            "degree": "B.Sc",
+            "field_of_study": "Artificial Intelligence",
+            "start_year": 2005,
+            "end_year": 2008,
+            "grade": "9.26 CGPA",
+            "tier": "tier_3"
+        }
+    ],
+    "skills": [
+        {"name": "Content Writing", "proficiency": "intermediate", "endorsements": 0, "duration_months": 33},
+        {"name": "SEO", "proficiency": "intermediate", "endorsements": 13, "duration_months": 31},
+        {"name": "Redux", "proficiency": "beginner", "endorsements": 15, "duration_months": 12},
+        {"name": "SQL", "proficiency": "beginner", "endorsements": 9, "duration_months": 11},
+        {"name": "Sales", "proficiency": "intermediate", "endorsements": 5, "duration_months": 27},
+        {"name": "gRPC", "proficiency": "beginner", "endorsements": 8, "duration_months": 3},
+        {"name": "Django", "proficiency": "intermediate", "endorsements": 3, "duration_months": 11},
+        {"name": "Terraform", "proficiency": "beginner", "endorsements": 4, "duration_months": 13}
+    ],
+    "certifications": [],
+    "languages": [
+        {"language": "English", "proficiency": "professional"},
+        {"language": "Hindi", "proficiency": "conversational"}
+    ],
+    "redrob_signals": {
+        "profile_completeness_score": 29.7,
+        "signup_date": "2026-04-26",
+        "last_active_date": "2026-02-28",
+        "open_to_work_flag": False,
+        "profile_views_received_30d": 53,
+        "applications_submitted_30d": 8,
+        "recruiter_response_rate": 0.12,
+        "avg_response_time_hours": 172.1,
+        "skill_assessment_scores": {},
+        "connection_count": 389,
+        "endorsements_received": 29,
+        "notice_period_days": 150,
+        "expected_salary_range_inr_lpa": {"min": 7.7, "max": 11.7},
+        "preferred_work_mode": "remote",
+        "willing_to_relocate": True,
+        "github_activity_score": -1,
+        "search_appearance_30d": 131,
+        "saved_by_recruiters_30d": 9,
+        "interview_completion_rate": 0.57,
+        "offer_acceptance_rate": -1,
+        "verified_email": True,
+        "verified_phone": True,
+        "linkedin_connected": False
+    }
+}
+
+with open("sample_resume.json", "w") as f:
+    json.dump(sample_data, f, indent=4)

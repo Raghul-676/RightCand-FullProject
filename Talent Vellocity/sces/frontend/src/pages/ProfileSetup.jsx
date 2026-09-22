@@ -4,7 +4,11 @@ import api from '../services/api'
 import { useAuth } from '../services/AuthContext'
 
 export default function ProfileSetup() {
-  const [form, setForm] = useState({ leetcode_username: '', codeforces_handle: '', github_username: '' })
+  const [form, setForm] = useState({ 
+    leetcode_username: '', 
+    codeforces_handle: '', 
+    github_username: '',
+  })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const { markSetupDone, user, logout } = useAuth()
@@ -13,6 +17,10 @@ export default function ProfileSetup() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    if (!form.leetcode_username.trim()) {
+      setError('LeetCode Username is compulsory')
+      return
+    }
     setSaving(true)
     try {
       await api.post('/profile/setup', form)
@@ -31,9 +39,9 @@ export default function ProfileSetup() {
   })
 
   const platforms = [
-    { key: 'leetcode_username', label: 'LeetCode Username', icon: '🟡', placeholder: 'e.g. john_doe', color: '#ffa116' },
-    { key: 'codeforces_handle', label: 'Codeforces Handle', icon: '🔵', placeholder: 'e.g. tourist', color: '#3b82f6' },
-    { key: 'github_username', label: 'GitHub Username', icon: '⚫', placeholder: 'e.g. torvalds', color: '#10b981' },
+    { key: 'leetcode_username', label: 'LeetCode Username (Compulsory)', icon: '🟡', placeholder: 'e.g. john_doe', color: '#ffa116' },
+    { key: 'codeforces_handle', label: 'Codeforces Handle (Optional)', icon: '🔵', placeholder: 'e.g. tourist', color: '#3b82f6' },
+    { key: 'github_username', label: 'GitHub Username (Optional)', icon: '⚫', placeholder: 'e.g. torvalds', color: '#10b981' },
   ]
 
   return (

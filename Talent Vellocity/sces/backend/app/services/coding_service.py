@@ -1,10 +1,16 @@
 import requests
 from fastapi import HTTPException
-
+from datetime import datetime
+import re
+import hashlib
 
 def fetch_leetcode(username: str) -> dict:
     query = """
     query($username: String!) {
+      allQuestionsCount {
+        difficulty
+        count
+      }
       matchedUser(username: $username) {
         username
         profile { ranking }
@@ -18,7 +24,10 @@ def fetch_leetcode(username: str) -> dict:
         }
       }
       userContestRanking(username: $username) {
-        rating attendedContestsCount globalRanking
+        rating attendedContestsCount globalRanking topPercentage totalParticipants
+      }
+      userContestRankingHistory(username: $username) {
+        rating
       }
       recentAcSubmissionList(username: $username, limit: 20) {
         timestamp
@@ -38,17 +47,24 @@ def fetch_leetcode(username: str) -> dict:
         if not user:
             raise HTTPException(404, "LeetCode user not found")
 
+        total_questions = {q["difficulty"]: q["count"] for q in data.get("allQuestionsCount", [])}
         ac = {s["difficulty"]: s["count"] for s in user["submitStats"]["acSubmissionNum"]}
         contest = data.get("userContestRanking") or {}
+        
+        # Calculate highest rating
+        history = data.get("userContestRankingHistory") or []
+        highest_rating = round(max([h.get("rating", 0) for h in history if h.get("rating")], default=0))
+        if highest_rating == 0 and contest.get("rating"):
+            highest_rating = round(contest["rating"])
 
-        # Topic breakdown — merge all tag groups, pick top 8
+        # Topic breakdown
         tag_counts = {}
         for group in ("fundamental", "intermediate", "advanced"):
             for t in (user.get("tagProblemCounts") or {}).get(group, []):
                 tag_counts[t["tagName"]] = tag_counts.get(t["tagName"], 0) + t["problemsSolved"]
         top_topics = dict(sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:8])
 
-        # Consistency — unique active days in last 20 submissions
+        # Consistency
         recent = data.get("recentAcSubmissionList") or []
         active_days = len({int(s["timestamp"]) // 86400 for s in recent})
         last_active_ts = int(recent[0]["timestamp"]) if recent else None
@@ -60,9 +76,15 @@ def fetch_leetcode(username: str) -> dict:
             "easy_solved": ac.get("Easy", 0),
             "medium_solved": ac.get("Medium", 0),
             "hard_solved": ac.get("Hard", 0),
+            "total_easy": total_questions.get("Easy", 956),
+            "total_medium": total_questions.get("Medium", 2091),
+            "total_hard": total_questions.get("Hard", 958),
             "contest_rating": round(contest.get("rating", 0)),
+            "highest_rating": highest_rating,
             "contests_attended": contest.get("attendedContestsCount", 0),
             "global_ranking": contest.get("globalRanking", 0),
+            "top_percentage": contest.get("topPercentage", 0.0),
+            "total_participants": contest.get("totalParticipants", 0),
             "topic_breakdown": top_topics,
             "active_days_last20": active_days,
             "last_active_ts": last_active_ts,
@@ -156,17 +178,35 @@ def fetch_codeforces(handle: str) -> dict:
         }
     except HTTPException:
         raise
-    except Exception as e:
         raise HTTPException(500, f"Codeforces fetch error: {e}")
 
 
 def fetch_github(username: str) -> dict:
+    import os
+    token = os.getenv("GITHUB_TOKEN")
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token:
+        headers["Authorization"] = f"token {token}"
+
     try:
         r = requests.get(
             f"https://api.github.com/users/{username}",
-            headers={"Accept": "application/vnd.github.v3+json"},
+            headers=headers,
             timeout=10,
         )
+        if r.status_code == 403:
+            return {
+                "username": username,
+                "name": username,
+                "avatar": f"https://github.com/identicons/{username}.png",
+                "public_repos": 0,
+                "followers": 0,
+                "following": 0,
+                "profile_url": f"https://github.com/{username}",
+                "active_days_last30": 0,
+                "last_active_ts": None,
+                "rate_limited": True
+            }
         if r.status_code == 404:
             raise HTTPException(404, "GitHub user not found")
         r.raise_for_status()
@@ -177,7 +217,7 @@ def fetch_github(username: str) -> dict:
         try:
             ev_r = requests.get(
                 f"https://api.github.com/users/{username}/events?per_page=100",
-                headers={"Accept": "application/vnd.github.v3+json"},
+                headers=headers,
                 timeout=10,
             )
             if ev_r.status_code == 200:
@@ -185,7 +225,6 @@ def fetch_github(username: str) -> dict:
                 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
                 push_days = set()
                 gh_last_active = None
-                push_days = set()
                 evs = ev_r.json()
                 if evs:
                     try:

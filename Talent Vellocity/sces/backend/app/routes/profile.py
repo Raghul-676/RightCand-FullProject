@@ -92,5 +92,19 @@ def get_my_stats(
         except Exception as e:
             errors.append({"platform": "github", "error": str(e)})
 
+    # Compile DSA topics spectrum for frontend radar chart
+    topics = {}
+    if "leetcode" in stats and isinstance(stats["leetcode"], dict):
+        lb = stats["leetcode"].get("topic_breakdown") or {}
+        for t, val in lb.items():
+            topics[t] = topics.get(t, 0) + val
+    if "codeforces" in stats and isinstance(stats["codeforces"], dict):
+        cb = stats["codeforces"].get("topic_breakdown") or {}
+        for t, val in cb.items():
+            topics[t] = topics.get(t, 0) + val
+            
+    # Sort and take top 8 topics to keep chart readable
+    stats["topics"] = dict(sorted(topics.items(), key=lambda x: x[1], reverse=True)[:8])
+
     return {"stats": stats, "errors": errors}
 

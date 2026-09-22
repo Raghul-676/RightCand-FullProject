@@ -35,7 +35,7 @@ class UserOut(BaseModel):
 # ── Coding Profile ────────────────────────────────────────────────────────────
 
 class ProfileSetup(BaseModel):
-    leetcode_username: Optional[str] = None
+    leetcode_username: str
     codeforces_handle: Optional[str] = None
     github_username: Optional[str] = None
 
@@ -52,7 +52,6 @@ class CodingProfileOut(BaseModel):
     github_username: Optional[str]
     updated_at: Optional[datetime]
     model_config = {"from_attributes": True}
-
 
 # ── Project Repos ─────────────────────────────────────────────────────────────
 

@@ -102,7 +102,7 @@ function ProjectCard({ repo }) {
     <div className="card" style={{ borderTop: `4px solid ${color}`, position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
         <div>
-          <h4 style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)' }}>{repo.project_name || 'Project'}</h4>
+          <h4 style={{ fontWeight: 700, fontSize: '1.05rem', color: '#000000' }}>{repo.project_name || 'Project'}</h4>
           <span style={{ fontSize: '0.75rem', color: 'var(--muted)', wordBreak: 'break-all' }}>{repo.repo_url}</span>
         </div>
         <span style={{ background: color + '15', color, border: `1px solid ${color}40`, borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -146,7 +146,11 @@ function ProjectCard({ repo }) {
 }
 
 export default function MyProfile() {
-  const [form, setForm] = useState({ leetcode_username: '', codeforces_handle: '', github_username: '' })
+  const [form, setForm] = useState({ 
+    leetcode_username: '', 
+    codeforces_handle: '', 
+    github_username: '',
+  })
   const [stats, setStats] = useState(null)
   const [statsErrors, setStatsErrors] = useState([])
   const [repoList, setRepoList] = useState([])
@@ -156,9 +160,10 @@ export default function MyProfile() {
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
   const [redirecting, setRedirecting] = useState(false)
+  const [redirectMsg, setRedirectMsg] = useState({ title: '', desc: '' })
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-
+ 
   useEffect(() => {
     // Load student profile handles
     api.get('/profile/me')
@@ -201,15 +206,20 @@ export default function MyProfile() {
     e.preventDefault(); setError(''); setSuccess(''); setSaving(true)
     try {
       await api.put('/profile/update', form)
-      setSuccess('Profile credentials updated!'); setTimeout(() => setSuccess(''), 3000); setStats(null)
+      setSuccess('Profile credentials updated!'); setTimeout(() => setSuccess(''), 3000);
+      fetchStats()
     } catch (err) { setError(err.response?.data?.detail || 'Update failed') }
     finally { setSaving(false) }
   }
 
   const handleHandoff = () => {
+    setRedirectMsg({
+      title: 'Redirecting to AI Interview Preparation Assistant...',
+      desc: 'Launching multi-agent interview preparation scorecard'
+    })
     setRedirecting(true)
     setTimeout(() => {
-      window.location.href = 'http://localhost:5174'
+      window.location.href = `http://localhost:5174/?username=${encodeURIComponent(user?.username || '')}&userId=${user?.id || ''}`
     }, 2000)
   }
 
@@ -229,8 +239,8 @@ export default function MyProfile() {
         <div className="transition-overlay">
           <div style={{ textAlign: 'center' }}>
             <img src="/sece_logo.png" alt="SECE Logo" style={{ height: '70px', marginBottom: '2rem', filter: 'brightness(0) invert(1)' }} />
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '0.75rem' }}>Redirecting to AI Interview Preparation Assistant...</h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '2rem' }}>Launching multi-agent interview preparation scorecard</p>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '0.75rem' }}>{redirectMsg.title}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '2rem' }}>{redirectMsg.desc}</p>
             <div className="loading" style={{ margin: '0 auto' }} />
           </div>
         </div>
@@ -241,7 +251,7 @@ export default function MyProfile() {
         <div className="brand">
           <img src="/sece_logo.png" alt="Sri Eshwar College of Engineering" />
         </div>
-        <nav>
+        <nav style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <a onClick={() => navigate('/my-profile')} className="active" style={{ cursor: 'pointer' }}>Profile</a>
           <a onClick={() => navigate('/project-analysis')} style={{ cursor: 'pointer' }}>Projects</a>
           {user?.role === 'admin' && <a onClick={() => navigate('/admin/dashboard')} style={{ cursor: 'pointer' }}>Admin</a>}
@@ -362,23 +372,103 @@ export default function MyProfile() {
           </div>
         )}
 
-        {/* ── Third Row: Coding Stats Cards ── */}
+        {/* ── LeetCode & Codeforces Profile Cards Row ── */}
         {stats && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '2rem' }} className="profile-grid">
-            <div className="stat-card">
-              <div className="value">{lc?.total_solved || 0}</div>
-              <div className="label">LeetCode Solved</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '1.5rem', marginBottom: '2rem' }} className="profile-grid">
+            
+            {/* LeetCode Custom Card */}
+            {lc && (
+              <div className="card">
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🟡</span>
+                    <h3 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary-dark)', margin: 0 }}>
+                      LeetCode Stats ({lc.username})
+                    </h3>
+                  </div>
+                  <span style={{ color: 'var(--muted)', fontSize: '0.8rem', fontWeight: 700 }}>
+                    Rank: #{lc.ranking || 'N/A'}
+                  </span>
+                </div>
+
+                {/* Main Body */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
+                  {/* Easy */}
+                  <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '8px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontWeight: 800, color: '#10b981', fontSize: '1.1rem' }}>{lc.easy_solved} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--muted2)' }}>/ {lc.total_easy}</span></div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', marginTop: '0.2rem', fontWeight: 600 }}>Easy</div>
+                  </div>
+
+                  {/* Medium */}
+                  <div style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.15)', borderRadius: '8px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontWeight: 800, color: '#f59e0b', fontSize: '1.1rem' }}>{lc.medium_solved} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--muted2)' }}>/ {lc.total_medium}</span></div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', marginTop: '0.2rem', fontWeight: 600 }}>Medium</div>
+                  </div>
+
+                  {/* Hard */}
+                  <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', padding: '0.75rem', textAlign: 'center' }}>
+                    <div style={{ fontWeight: 800, color: '#ef4444', fontSize: '1.1rem' }}>{lc.hard_solved} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--muted2)' }}>/ {lc.total_hard}</span></div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--muted)', textTransform: 'uppercase', marginTop: '0.2rem', fontWeight: 600 }}>Hard</div>
+                  </div>
+                </div>
+
+                {/* Footer Details */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', borderTop: '1px solid var(--border)', paddingTop: '1rem', textAlign: 'center' }}>
+                  <div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem', marginBottom: '0.15rem', fontWeight: 600 }}>Rating</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1rem' }}>{lc.contest_rating}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem', marginBottom: '0.15rem', fontWeight: 600 }}>Highest Rating</div>
+                    <div style={{ fontWeight: 800, color: '#ffb300', fontSize: '1rem' }}>{lc.highest_rating}</div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.7rem', marginBottom: '0.15rem', fontWeight: 600 }}>Contest Percentile</div>
+                    <div style={{ fontWeight: 800, color: 'var(--text)', fontSize: '0.95rem' }}>
+                      {lc.global_ranking ? `${lc.top_percentage}%` : 'N/A'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Other Stats Overview */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Codeforces summary card */}
+              <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🔵</span>
+                  <h4 style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted)' }}>CODEFORCES RATING</h4>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)' }}>
+                  {cf?.rating || 0}
+                </div>
+                {cf && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.25rem' }}>
+                    Rank: <strong style={{ color: 'var(--text)' }}>{cf.rank}</strong> | Solved: <strong style={{ color: 'var(--text)' }}>{cf.total_solved}</strong> problems
+                  </p>
+                )}
+              </div>
+
+              {/* Repos count card */}
+              <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🔍</span>
+                  <h4 style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--muted)' }}>REPOSITORIES ANALYZED</h4>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--success)' }}>
+                  {repoList.length}
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.25rem' }}>
+                  Engineered portfolios with dynamic complexity classifications.
+                </p>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="value">{cf?.rating || 0}</div>
-              <div className="label">Codeforces Rating</div>
-            </div>
-            <div className="stat-card">
-              <div className="value">{repoList.length}</div>
-              <div className="label">Repos Analyzed</div>
-            </div>
+
           </div>
         )}
+
 
         {/* ── Fourth Row: Analyzed Projects Grid ── */}
         <div>

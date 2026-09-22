@@ -64,7 +64,8 @@ def analyze(req: AnalyzeRequest):
         evidence = select_evidence_files(owner, repo, branch, tree, tech_stack.manifests_found)
 
         # Step 4: grounded LLM synthesis
-        domain_claim, summary_claim = synthesize(tech_stack, complexity, evidence)
+        domain_claim, summary_claim, frameworks = synthesize(tech_stack, complexity, evidence)
+        tech_stack.frameworks_detected = frameworks
 
         # Step 5: validation pass
         notes, low_confidence = validate_report(domain_claim, summary_claim, evidence)
